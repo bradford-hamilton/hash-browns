@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"strconv"
 
 	// postgres driver
@@ -26,9 +27,18 @@ type Stats struct {
 }
 
 // New makes a new database using the connection string and
-// returns it, otherwise returns the error
-func New(connString string) (*Database, error) {
-	db, err := sql.Open("postgres", connString)
+// returns it, otherwise returns the error - Normally connStr
+// would contain a password as well but no need for this challenge
+func New() (*Database, error) {
+	connStr := fmt.Sprintf(
+		"host=%s port=%s user=%s dbname=%s sslmode=disable",
+		os.Getenv("HB_DB_HOST"),
+		os.Getenv("HB_DB_PORT"),
+		os.Getenv("HB_DB_USER"),
+		os.Getenv("HB_DB_NAME"),
+	)
+
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
 	}
@@ -40,15 +50,6 @@ func New(connString string) (*Database, error) {
 	}
 
 	return &Database{db}, nil
-}
-
-// ConnString returns a connection string based on the parameters it's given
-// This would normally also contain the password, however we're not using one
-func ConnString(host string, port int, user string, dbName string) string {
-	return fmt.Sprintf(
-		"host=%s port=%d user=%s dbname=%s sslmode=disable",
-		host, port, user, dbName,
-	)
 }
 
 // InsertReqTime inserts a request time into the database
@@ -69,13 +70,12 @@ func (db *Database) GetStats() *Stats {
 	var avg string
 
 	row := db.QueryRow(query)
-	err := row.Scan(&stats.Total, &avg)
-	if err != nil {
-		// TODO: ERror handling
-		fmt.Println("Error selecting stats from db", err)
-	}
+	// No need to handle error below - worst case scenario we
+	// get 0 & 0 values for the very first request which would be accurate
+	row.Scan(&stats.Total, &avg)
 
-	// AVG returns a string with the pq driver and challenge example is looking for int/float
+	// AVG returns a string with the pq driver and challenge example is
+	// looking for int/float. No need to handle err
 	f, _ := strconv.ParseFloat(avg, 64)
 	stats.Average = f
 

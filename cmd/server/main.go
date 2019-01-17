@@ -1,18 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/bradford-hamilton/hash-browns/postgres"
 	"github.com/bradford-hamilton/hash-browns/server"
 )
 
 func main() {
-	// Create a new connection to our pg database
-	db, err := postgres.New(
-		postgres.ConnString("localhost", 5432, "bradfordlamson-scribner", "hash_browns_db"),
-	)
+	db, err := postgres.New()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,5 +23,5 @@ func main() {
 	mux.HandleFunc("/hash", s.ReqTimer(s.Hash()))
 	mux.HandleFunc("/stats", s.Stats())
 
-	log.Fatal(http.ListenAndServe(":4000", mux))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("HB_PORT")), mux))
 }
