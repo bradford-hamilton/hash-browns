@@ -1,10 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/bradford-hamilton/hash-browns/postgres"
 	"github.com/bradford-hamilton/hash-browns/server"
@@ -19,9 +21,26 @@ func main() {
 
 	s := server.New(db)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/hash", s.ReqTimer(s.Hash()))
-	mux.HandleFunc("/stats", s.Stats())
+	idleConnsClosed := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	s.KillItWithFire = sigint
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("HB_PORT")), mux))
+	go func(sigint chan os.Signal) {
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+		<-sigint
+
+		// We received an interrupt signal, shut down.
+		if err := s.Srv.Shutdown(context.Background()); err != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
+	}(sigint)
+
+	if err := s.Srv.ListenAndServe(); err != http.ErrServerClosed {
+		// Error starting or closing listener:
+		log.Printf("HTTP server ListenAndServe: %v", err)
+	}
+
+	<-idleConnsClosed
 }
