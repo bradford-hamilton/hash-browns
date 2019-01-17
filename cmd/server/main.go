@@ -21,7 +21,7 @@ func main() {
 	s := server.New(db)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/hash", s.Hash())
+	mux.HandleFunc("/hash", s.ReqTimer(s.Hash()))
 
 	log.Fatal(http.ListenAndServe(":4000", mux))
 }

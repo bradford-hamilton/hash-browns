@@ -18,6 +18,16 @@ func New(db *postgres.Database) *Server {
 	return &Server{db}
 }
 
+// ReqTimer serves as middleware to time the requests
+func (s *Server) ReqTimer(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		h.ServeHTTP(w, r)
+		microSecs := time.Since(start).Nanoseconds() / 1000
+		s.db.InsertReqTime(microSecs)
+	}
+}
+
 // Hash handles http calls to /hash
 func (s *Server) Hash() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
