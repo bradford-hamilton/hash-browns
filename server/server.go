@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -18,7 +19,7 @@ func New(db *postgres.Database) *Server {
 	return &Server{db}
 }
 
-// ReqTimer serves as middleware to time the requests
+// ReqTimer serves as middleware to time requests
 func (s *Server) ReqTimer(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -44,5 +45,21 @@ func (s *Server) Hash() http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(h))
+	}
+}
+
+// Stats handles http calls to /stats
+func (s *Server) Stats() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		s := s.db.GetStats()
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(s)
 	}
 }

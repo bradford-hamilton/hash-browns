@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	// postgres driver
 	_ "github.com/lib/pq"
@@ -15,8 +16,13 @@ type Database struct{ DB }
 type DB interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
-	Query(query string, args ...interface{}) (*sql.Rows, error)
 	Close() error
+}
+
+// Stats represents the shape needed for statistics endpoint
+type Stats struct {
+	Total   int
+	Average float64
 }
 
 // New makes a new database using the connection string and
@@ -54,4 +60,24 @@ func (db *Database) InsertReqTime(timeInMicroseconds int64) {
 		// TODO: ERror handling
 		fmt.Println("Error inserting into database", err)
 	}
+}
+
+// GetStats finds the total password hash requests as well as the average time
+func (db *Database) GetStats() *Stats {
+	query := `SELECT COUNT(time), AVG(time) FROM req_times;`
+	stats := Stats{}
+	var avg string
+
+	row := db.QueryRow(query)
+	err := row.Scan(&stats.Total, &avg)
+	if err != nil {
+		// TODO: ERror handling
+		fmt.Println("Error selecting stats from db", err)
+	}
+
+	// AVG returns a string with the pq driver and challenge example is looking for int/float
+	f, _ := strconv.ParseFloat(avg, 64)
+	stats.Average = f
+
+	return &stats
 }
