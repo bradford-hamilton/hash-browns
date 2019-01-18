@@ -14,6 +14,16 @@ HB_DB_USER
 HB_DB_NAME
 ```
 
+Example for local development - place this inside your `~/.bash_profile`:
+```
+# HashBrowns env variables
+export HB_PORT=4000
+export HB_DB_HOST=localhost
+export HB_DB_PORT=5432
+export HB_DB_USER=bradford
+export HB_DB_NAME=hash_browns_db
+```
+
 ### Database
 Ensure you have PostgreSQL on your machine, and run the `migration.sql` file to create and migrate the db
 

@@ -22,8 +22,8 @@ type DB interface {
 
 // Stats represents the shape needed for statistics endpoint
 type Stats struct {
-	Total   int
-	Average float64
+	Total   int     `json:"total"`
+	Average float64 `json:"average"`
 }
 
 // New makes a new database using the connection string and
