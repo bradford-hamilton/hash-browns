@@ -75,8 +75,8 @@ func (db *Database) GetStats() *Stats {
 	// get 0 & 0 values for the very first request which would be accurate
 	row.Scan(&stats.Total, &avg)
 
-	// AVG returns a string with the pq driver and challenge example is
-	// looking for int/float. No need to handle err as this will always be from pg
+	// pq driver returns AVG as a string  and the challenge example is
+	// looking for int/float. No need to handle err
 	f, _ := strconv.ParseFloat(avg, 64)
 	stats.Average = f
 

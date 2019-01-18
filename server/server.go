@@ -12,14 +12,16 @@ import (
 	"github.com/bradford-hamilton/hash-browns/postgres"
 )
 
-// Server will hold connection to the db as well as handlers
+// Server struct will hold connection to the db, the server and handlers,
+// as well as the sigChan needed for graceful shutdown
 type Server struct {
 	db      *postgres.Database
 	Srv     *http.Server
 	SigChan chan os.Signal
 }
 
-// New returns a new Server with db dependency
+// New takes a db (*postgres.Database) and returns a new Server
+// with db, server, and handlers
 func New(db *postgres.Database) *Server {
 	s := &Server{db: db}
 	mux := http.NewServeMux()
@@ -47,7 +49,8 @@ func (s *Server) ReqTimer(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Hash handles http calls to /hash
+// Hash is the handler for http calls to /hash - It takes the form value with
+// the key of "password", runs it through hash brown, and returns it in plain text
 func (s *Server) Hash(w http.ResponseWriter, r *http.Request) {
 	defer time.Sleep(5 * time.Second)
 
@@ -64,7 +67,8 @@ func (s *Server) Hash(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h))
 }
 
-// Stats handles http calls to /stats
+// Stats is the handler for http calls to /stats. It makes a GetStats() db
+// call and returns the stats as json
 func (s *Server) Stats(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
@@ -79,6 +83,7 @@ func (s *Server) Stats(w http.ResponseWriter, r *http.Request) {
 }
 
 // Shutdown handles http calls to /shutdown and gracefully terminates the server
+// by passing syscall.SIGTERM onto the servers SigChan
 func (s *Server) Shutdown(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)

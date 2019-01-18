@@ -13,10 +13,8 @@ import (
 	"github.com/bradford-hamilton/hash-browns/server"
 )
 
-// var Logger log.Logger
-
 func main() {
-	// Set up some logging
+	// Set up error logging
 	f, err := os.OpenFile("errors.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
@@ -24,17 +22,19 @@ func main() {
 	defer f.Close()
 	log.SetOutput(f)
 
+	// Create a new instance of pg database
 	db, err := postgres.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
+	// Create our server
 	s := server.New(db)
 
+	// Set up graceful shutdown and start server
 	sigint := make(chan os.Signal, 1)
 	idleConnsClosed := make(chan struct{})
-
 	s.SigChan = sigint
 
 	go func(sigint chan os.Signal) {
@@ -43,7 +43,7 @@ func main() {
 
 		fmt.Println("Gracefully shutting down server...")
 
-		// We received an interrupt signal, shut down.
+		// Received an interrupt signal, shut down
 		if err := s.Srv.Shutdown(context.Background()); err != nil {
 			// Error from closing listeners, or context timeout:
 			log.Printf("HTTP server Shutdown: %v", err)
