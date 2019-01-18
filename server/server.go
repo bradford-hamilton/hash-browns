@@ -23,6 +23,8 @@ type Server struct {
 func New(db *postgres.Database) *Server {
 	s := &Server{db: db}
 	mux := http.NewServeMux()
+
+	// Routing
 	mux.HandleFunc("/hash", s.ReqTimer(s.Hash))
 	mux.HandleFunc("/stats", s.Stats)
 	mux.HandleFunc("/shutdown", s.Shutdown)

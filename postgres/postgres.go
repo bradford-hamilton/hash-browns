@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -58,8 +59,7 @@ func (db *Database) InsertReqTime(timeInMicroseconds int64) {
 
 	_, err := db.Exec(query, timeInMicroseconds)
 	if err != nil {
-		// TODO: ERror handling
-		fmt.Println("Error inserting into database", err)
+		log.Printf("Error inserting time of: %d into database: %s", timeInMicroseconds, err)
 	}
 }
 

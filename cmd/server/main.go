@@ -13,7 +13,17 @@ import (
 	"github.com/bradford-hamilton/hash-browns/server"
 )
 
+// var Logger log.Logger
+
 func main() {
+	// Set up some logging
+	f, err := os.OpenFile("errors.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
 	db, err := postgres.New()
 	if err != nil {
 		log.Fatal(err)
@@ -31,7 +41,6 @@ func main() {
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
 
-		// Nice little notification
 		fmt.Println("Gracefully shutting down server...")
 
 		// We received an interrupt signal, shut down.
