@@ -23,15 +23,14 @@ type Server struct {
 func New(db *postgres.Database) *Server {
 	s := &Server{db: db}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/hash", s.ReqTimer(s.Hash()))
-	mux.HandleFunc("/stats", s.Stats())
-	mux.HandleFunc("/shutdown", s.Shutdown())
+	mux.HandleFunc("/hash", s.ReqTimer(s.Hash))
+	mux.HandleFunc("/stats", s.Stats)
+	mux.HandleFunc("/shutdown", s.Shutdown)
 
-	srv := &http.Server{
+	s.Srv = &http.Server{
 		Addr:    fmt.Sprintf(":%s", os.Getenv("HB_PORT")),
 		Handler: mux,
 	}
-	s.Srv = srv
 
 	return s
 }
@@ -47,52 +46,46 @@ func (s *Server) ReqTimer(h http.HandlerFunc) http.HandlerFunc {
 }
 
 // Hash handles http calls to /hash
-func (s *Server) Hash() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer time.Sleep(10 * time.Second)
+func (s *Server) Hash(w http.ResponseWriter, r *http.Request) {
+	defer time.Sleep(5 * time.Second)
 
-		if r.Method != "POST" {
-			http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		p := r.PostFormValue("password")
-		h := hashbrown.Create(p)
-
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(h))
+	if r.Method != "POST" {
+		http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
+		return
 	}
+
+	p := r.PostFormValue("password")
+	h := hashbrown.Create(p)
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(h))
 }
 
 // Stats handles http calls to /stats
-func (s *Server) Stats() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		s := s.db.GetStats()
-
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(s)
+func (s *Server) Stats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
+		return
 	}
+
+	stats := s.db.GetStats()
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(stats)
 }
 
 // Shutdown handles http calls to /shutdown and gracefully terminates the server
-func (s *Server) Shutdown() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		s.SigChan <- syscall.SIGTERM
-
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Successfully shutdown server"))
+func (s *Server) Shutdown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "405 Method Not Allowed", http.StatusMethodNotAllowed)
+		return
 	}
+
+	s.SigChan <- syscall.SIGTERM
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully shutdown server"))
 }

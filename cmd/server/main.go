@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -29,6 +30,9 @@ func main() {
 	go func(sigint chan os.Signal) {
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
+
+		// Nice little notification
+		fmt.Println("Gracefully shutting down server...")
 
 		// We received an interrupt signal, shut down.
 		if err := s.Srv.Shutdown(context.Background()); err != nil {
