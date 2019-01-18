@@ -14,26 +14,24 @@ import (
 
 // Server will hold connection to the db as well as handlers
 type Server struct {
-	db             *postgres.Database
-	Srv            *http.Server
-	KillItWithFire chan os.Signal
+	db      *postgres.Database
+	Srv     *http.Server
+	SigChan chan os.Signal
 }
 
 // New returns a new Server with db dependency
 func New(db *postgres.Database) *Server {
-	s := &Server{}
+	s := &Server{db: db}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hash", s.ReqTimer(s.Hash()))
 	mux.HandleFunc("/stats", s.Stats())
 	mux.HandleFunc("/shutdown", s.Shutdown())
 
-	hs := &http.Server{
+	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", os.Getenv("HB_PORT")),
 		Handler: mux,
 	}
-
-	s.db = db
-	s.Srv = hs
+	s.Srv = srv
 
 	return s
 }
@@ -91,7 +89,7 @@ func (s *Server) Shutdown() http.HandlerFunc {
 			return
 		}
 
-		s.KillItWithFire <- syscall.SIGTERM
+		s.SigChan <- syscall.SIGTERM
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)

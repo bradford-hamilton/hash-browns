@@ -21,9 +21,10 @@ func main() {
 
 	s := server.New(db)
 
-	idleConnsClosed := make(chan struct{})
 	sigint := make(chan os.Signal, 1)
-	s.KillItWithFire = sigint
+	idleConnsClosed := make(chan struct{})
+
+	s.SigChan = sigint
 
 	go func(sigint chan os.Signal) {
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)

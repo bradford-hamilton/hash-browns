@@ -28,3 +28,6 @@ realize start
 ```
 
 Or feel free to run/build `cmd/server/main.go`
+
+### GoDoc
+TODO ^
